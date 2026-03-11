@@ -1,19 +1,38 @@
 import socket
+import ssl
+import threading
+
+
+def receive_messages(sock):
+
+    while True:
+
+        try:
+            data = sock.recv(1024)
+
+            if not data:
+                break
+
+            print("\n" + data.decode())
+
+        except:
+            break
+
+
+context = ssl.create_default_context()
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client = context.wrap_socket(client, server_hostname="localhost")
 
-#here we do not bind the socket into a particular port.
-#Reasons: 1. Port is given by the OS itself
-#         2. IP is obtained and assigned by os via DHCP protocol
+client.connect(("127.0.0.1", 5000))
 
+print("Connected to secure server")
 
-client.connect(("127.0.0.1", 5000)) #connect the ip to the local server
-#incase of a server located at some other part of the world then the s
+thread = threading.Thread(target=receive_messages, args=(client,))
+thread.start()
 
-client.send("boss".encode())
+while True:
 
-data = client.recv(1024)
+    message = input("-> ")
 
-print("Server replied:", data.decode())
-
-client.close()
+    client.send(message.encode())

@@ -1,29 +1,95 @@
 import socket
+import threading
+import ssl
 
-server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)   
-# AF_NET :  address family  
-# SOCK_Stream : we are using TCP. WHY?  to ensure reliable and secure connection and ordered sequence of packets.
+topics = {}
+topics_lock = threading.Lock()
 
-server.bind(("127.0.0.1",5000))
-#IP:  127.0.0.1 (local host ip) and server program is going to be listened to at port 5000
-#if i use 0.0.0.0 then any device on my Local network can connect to it
+# to remove dead sockets
+def remove_client_from_topics(client_socket):
+    with topics_lock:
+        for topic in topics:
+            if client_socket in topics[topic]:
+                topics[topic].remove(client_socket)   
 
-server.listen() #listening socket which wilk accept all connections from clients
 
-print("Welcoming socket established and listening at port:5000")
 
-while True:
+def handle_client(client_socket, address):
+    print("Client connected:", address)
+    #persistent connection loop
+    while True:
+        data = client_socket.recv(1024)
 
-    client_socket, address = server.accept() # blocking call. The server creates a new server side client socket for each connection approved and waits if not
+        if not data:
+            break
 
-    data = client_socket.recv(1024)
+        message = data.decode().strip()
+        parts = message.split()
+        command = parts[0]
 
-    message = data.decode()
+        if not parts:
+            continue
 
-    print("Message from",address," client :", message)
+        if command == "SUBSCRIBE":
+            topic = parts[1]
+            with topics_lock:
+                if topic not in topics:
+                    topics[topic] = []
 
-    client_socket.send("Hello client".encode())
+                topics[topic].append(client_socket)
+            print(address, "subscribed to", topic)
+
+        elif command == "PUBLISH":
+
+            topic = parts[1]
+            msg = " ".join(parts[2:])
+
+            with topics_lock:
+                subscribers = list(topics.get(topic, []))
+
+            for sub in subscribers:
+                sub.send(f"{topic}: {msg}".encode())
+
+        elif command == "UNSUBSCRIBE":
+
+            topic = parts[1]
+
+            with topics_lock:
+
+                if topic in topics and client_socket in topics[topic]:
+                    topics[topic].remove(client_socket)
+
+            print(address, "unsubscribed from", topic)
+        
+
+        print("Message from", address, ":", message)
+        client_socket.send("ACK".encode())
+    
+    remove_client_from_topics(client_socket)   
 
     client_socket.close()
+    print("Client disconnected:", address)
 
 
+#establishing the permanent server listening socket
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(("0.0.0.0", 5000))
+server.listen(5)
+
+server = context.wrap_socket(server, server_side=True)
+
+print("Server running on port 5000")
+
+while True:
+    client_socket, client_address = server.accept()
+    #create a thread for each client and run them simultaneously using multi-threading
+    thread = threading.Thread(
+        target=handle_client,
+        args=(client_socket, client_address),
+        daemon=True
+    )
+
+    thread.start()
