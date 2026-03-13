@@ -6,7 +6,6 @@ import threading
 def receive_messages(sock):
 
     while True:
-
         try:
             data = sock.recv(1024)
 
@@ -19,12 +18,12 @@ def receive_messages(sock):
             break
 
 
-context = ssl.create_default_context()
+context = ssl._create_unverified_context()
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client = context.wrap_socket(client, server_hostname="localhost")
+client = context.wrap_socket(client)
 
-client.connect(("127.0.0.1", 5000))
+client.connect(("10.34.30.149", 5000))
 
 print("Connected to secure server")
 
