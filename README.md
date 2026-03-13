@@ -1,9 +1,3 @@
-Here is a **much stronger GitHub README** that makes your project look **like a real systems / networking project**, not a small college assignment. This is the kind of README that actually **impresses recruiters and GitHub viewers**.
-
-You can directly paste this into **README.md**.
-
----
-
 # Socket-Based Publish–Subscribe Messaging System
 
 A **high-concurrency topic-based messaging server** built using **Python sockets and multithreading**, implementing the **Publish–Subscribe (Pub/Sub) communication model**.
@@ -294,3 +288,4 @@ Through this project, you gain practical understanding of:
 Samarth  
 Abhiram  
 Krishna  
+
