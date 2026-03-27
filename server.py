@@ -37,7 +37,7 @@ def handle_client(client_socket, address):
 
             message = data.decode().strip()
 
-            # 🔥 track received messages
+            # track received messages
             with metrics_lock:
                 messages_received += 1
 
@@ -71,7 +71,7 @@ def handle_client(client_socket, address):
                     try:
                         sub.send(f"{topic}: {msg}".encode())
 
-                        # 🔥 track sent messages
+                        # track sent messages
                         with metrics_lock:
                             messages_sent += 1
 
@@ -100,7 +100,7 @@ def handle_client(client_socket, address):
     print("Client disconnected:", address)
 
 
-# 🔥 METRICS PRINTER THREAD
+#  METRICS PRINTER THREAD
 def print_metrics():
     global messages_sent, messages_received
 
@@ -136,7 +136,7 @@ server = context.wrap_socket(server, server_side=True)
 print("Server running on port 5000")
 
 
-# 🔥 start metrics thread
+#  start metrics thread
 threading.Thread(target=print_metrics, daemon=True).start()
 
 
